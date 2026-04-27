@@ -9,23 +9,42 @@ Production-ready Flask calorie tracker with 3D Three.js UI, Anime.js animations,
 
 ## Quick Setup
 
-### Windows
+### Automated Setup (All Platforms)
 ```bash
-# Option 1: PowerShell (recommended)
-.\setup.ps1
+python setup.py
+```
 
-# Option 2: Command Prompt
+This will:
+- Create virtual environment
+- Install all dependencies
+- Create `.env` file from template
+- Initialize database
+- Display next steps
+
+### Alternative Setup Scripts
+
+**Windows PowerShell:**
+```bash
+.\setup.ps1
+```
+
+**Windows Command Prompt:**
+```bash
 setup.bat
 ```
 
-### macOS / Linux
+**macOS / Linux:**
 ```bash
 chmod +x setup.sh
 ./setup.sh
 ```
 
-Then run:
+### Run the App
 ```bash
+# Activate virtual environment
+source venv/bin/activate   # Windows: venv\Scripts\activate
+
+# Start the app
 python app.py
 ```
 
