@@ -7,7 +7,31 @@ Production-ready Flask calorie tracker with 3D Three.js UI, Anime.js animations,
 - **DB**: SQLite (auto-created)
 - **Frontend**: Tailwind CSS, Three.js, Anime.js, Chart.js
 
-## Setup
+## Quick Setup
+
+### Windows
+```bash
+# Option 1: PowerShell (recommended)
+.\setup.ps1
+
+# Option 2: Command Prompt
+setup.bat
+```
+
+### macOS / Linux
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+Then run:
+```bash
+python app.py
+```
+
+Visit http://localhost:5000
+
+## Manual Setup
 
 ```bash
 # 1. Clone / unzip project
@@ -20,11 +44,12 @@ source venv/bin/activate   # Windows: venv\Scripts\activate
 # 3. Install dependencies
 pip install -r requirements.txt
 
-# 4. Run
+# 4. Copy environment template
+cp .env.example .env
+
+# 5. Run
 python app.py
 ```
-
-Visit http://localhost:5000
 
 ## Features
 - **Auth**: Register, login, logout with secure password hashing
