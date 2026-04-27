@@ -60,10 +60,15 @@ calorie_tracker/
 ```
 
 ## Environment Variables (optional)
+Copy `.env.example` to `.env` and configure:
 ```
-SECRET_KEY=your-secret-key-here
+SECRET_KEY=your-secure-random-key-here
 DATABASE_URL=sqlite:///calorie_tracker.db
+FLASK_ENV=development
+FLASK_DEBUG=False
 ```
+
+**Note**: Never commit `.env` files with real secrets. Use `.env.example` as a template.
 
 ## Default Ports
 App runs on http://localhost:5000
