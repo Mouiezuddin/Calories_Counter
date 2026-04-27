@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% block title %}Foods{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8">
+  <div class="flex items-center justify-between mb-8" id="food-header">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Food Database</h1>
+      <p class="text-slate-400 mt-1 text-sm">Browse system foods or add your own</p>
+    </div>
+    <button onclick="document.getElementById('add-modal').classList.remove('hidden')" class="btn-primary">+ Add Custom
+      Food</button>
+  </div>
+
+  <!-- Search + Filter Bar -->
+  <form method="GET" action="{{ url_for('food.index') }}" class="flex gap-3 mb-6" id="search-bar">
+    <div class="flex-1 relative">
+      <input type="text" name="q" value="{{ q }}" placeholder="Search foods..." class="pl-12 py-4 text-lg w-full">
+      <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" fill="none" stroke="currentColor"
+        viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+    </div>
+    <select name="category" class="w-48 py-4 text-lg">
+      <option value="">All Categories</option>
+      {% for cat in categories %}
+      <option value="{{ cat }}" {% if cat==category %}selected{% endif %}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn-primary px-8 py-4 text-lg font-semibold">Search</button>
+    {% if q or category %}
+    <a href="{{ url_for('food.index') }}" class="btn-ghost px-6 py-4 text-lg font-semibold">Clear</a>
+    {% endif %}
+  </form>
+
+  <!-- Food Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8" id="food-grid">
+    {% for food in foods.items %}
+    <div class="card p-4 food-card cursor-pointer transition-all hover:scale-105 hover:shadow-lg"
+      onclick="openAddFoodModal({{ food.id }}, '{{ food.name }}', {{ food.calories }}, {{ food.protein }}, {{ food.carbs }}, {{ food.fat }})">
+      <div class="flex items-start justify-between mb-3">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-white truncate">{{ food.name }}</div>
+          {% if food.brand %}<div class="text-xs text-slate-500">{{ food.brand }}</div>{% endif %}
+          <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full"
+            style="background: rgba(0,245,196,0.08); color: var(--neon); border: 1px solid rgba(0,245,196,0.15);">
+            {{ food.category or 'Other' }}
+          </span>
+        </div>
+        {% if not food.is_system and food.user_id == current_user.id %}
+        <form method="POST" action="{{ url_for('food.delete', food_id=food.id) }}" class="ml-2 flex-shrink-0"
+          onclick="event.stopPropagation();">
+          {{ form.hidden_tag() }}
+          <button type="submit" onclick="return confirm('Delete this food?')"
+            class="text-slate-600 hover:text-red-400 transition-colors text-sm">✕</button>
+        </form>
+        {% endif %}
+      </div>
+
+      <!-- Per 100g macros -->
+      <div class="text-xs text-slate-500 mb-3">Per 100g</div>
+      <div class="grid grid-cols-2 gap-2">
+        <div class="macro-chip" style="background: rgba(0,245,196,0.06);">
+          <span class="text-slate-500">kcal</span>
+          <span class="font-bold neon-text font-mono">{{ food.calories | round | int }}</span>
+        </div>
+        <div class="macro-chip" style="background: rgba(129,140,248,0.06);">
+          <span class="text-slate-500">prot</span>
+          <span class="font-bold font-mono" style="color:#818cf8">{{ food.protein | round(1) }}g</span>
+        </div>
+        <div class="macro-chip" style="background: rgba(251,191,36,0.06);">
+          <span class="text-slate-500">carb</span>
+          <span class="font-bold font-mono" style="color:#fbbf24">{{ food.carbs | round(1) }}g</span>
+        </div>
+        <div class="macro-chip" style="background: rgba(244,114,182,0.06);">
+          <span class="text-slate-500">fat</span>
+          <span class="font-bold font-mono" style="color:#f472b6">{{ food.fat | round(1) }}g</span>
+        </div>
+      </div>
+
+      {% if not food.is_system %}
+      <div class="mt-3 text-xs text-slate-600 flex items-center gap-1">
+        <span>👤</span> Custom food
+      </div>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="col-span-full card p-12 text-center">
+      <div class="text-4xl mb-3">🔍</div>
+      <p class="text-slate-400">No foods found. Try a different search or add your own!</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if foods.pages > 1 %}
+  <div class="flex justify-center gap-2 mt-4">
+    {% for p in range(1, foods.pages + 1) %}
+    <a href="{{ url_for('food.index', page=p, q=q, category=category) }}" class="w-9 h-9 flex items-center justify-center rounded-lg text-sm
+              {% if p == foods.page %}btn-primary{% else %}btn-ghost{% endif %}">
+      {{ p }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- Add Food Modal -->
+<div id="add-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background: rgba(2,8,23,0.8); backdrop-filter: blur(8px);">
+  <div class="card p-8 w-full max-w-lg" id="modal-card">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-white">Add Custom Food</h2>
+      <button onclick="document.getElementById('add-modal').classList.add('hidden')"
+        class="text-slate-400 hover:text-white text-xl">✕</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('food.add') }}">
+      {{ form.hidden_tag() }}
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.name.label }} *</label>
+          {{ form.name(placeholder="e.g. Homemade Granola") }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.brand.label }}</label>
+          {{ form.brand(placeholder="Optional") }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.category.label }}</label>
+          {{ form.category() }}
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.calories.label }} *</label>
+          {{ form.calories(placeholder="350") }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.protein.label }}</label>
+          {{ form.protein(placeholder="0") }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.carbs.label }}</label>
+          {{ form.carbs(placeholder="0") }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.fat.label }}</label>
+          {{ form.fat(placeholder="0") }}
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-2">{{ form.fiber.label }}</label>
+          {{ form.fiber(placeholder="0") }}
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button type="submit" class="btn-primary flex-1">Save Food</button>
+        <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')"
+          class="btn-ghost flex-1">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .macro-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+  }
+
+  .profile-input {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    transition: all 0.3s ease !important;
+  }
+
+  .profile-input:focus {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: #00f5c4 !important;
+    box-shadow: 0 0 0 3px rgba(0, 245, 196, 0.15) !important;
+  }
+
+  .profile-input::placeholder {
+    color: #64748b !important;
+  }
+</style>
+
+<!-- Add Food to Meal Modal -->
+<div id="add-to-meal-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+  style="background: rgba(2,8,23,0.8); backdrop-filter: blur(8px);">
+  <div class="card p-8 w-full max-w-lg" id="meal-modal-card">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-xl font-bold text-white">Add to Meal</h2>
+      <button onclick="closeAddFoodModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
+    </div>
+
+    <form method="POST" action="{{ url_for('dashboard.add_item') }}" id="add-to-meal-form">
+      <input type="hidden" name="food_id" id="modal-food-id">
+
+      <!-- Food Info Display -->
+      <div class="mb-6 p-4 rounded-lg"
+        style="background: rgba(0,245,196,0.06); border: 1px solid rgba(0,245,196,0.15);">
+        <div class="text-sm text-slate-400 mb-1">Selected Food</div>
+        <div class="text-lg font-bold text-white" id="modal-food-name"></div>
+        <div class="text-xs text-slate-500 mt-2">Per 100g: <span id="modal-food-macros"></span></div>
+      </div>
+
+      <!-- Grams Input -->
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2v20M2 12h20" />
+          </svg>
+          Serving Size (grams)
+        </label>
+        <input type="number" name="grams" id="modal-grams" placeholder="100" min="1" step="0.1"
+          class="profile-input text-lg py-4 px-4" required>
+      </div>
+
+      <!-- Meal Type Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="1" />
+            <path d="M12 1v6m0 6v6" />
+          </svg>
+          Meal Type
+        </label>
+        <select name="meal_type" id="modal-meal-type" class="profile-input text-lg py-4 px-4" required>
+          <option value="breakfast">🌅 Breakfast</option>
+          <option value="lunch">🍽️ Lunch</option>
+          <option value="dinner">🌙 Dinner</option>
+          <option value="snack" selected>🍿 Snack</option>
+        </select>
+      </div>
+
+      <!-- Date Selection -->
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <path d="M16 2v4M8 2v4M3 10h18" />
+          </svg>
+          Date
+        </label>
+        <input type="date" name="log_date" id="modal-log-date" class="profile-input text-lg py-4 px-4" required>
+      </div>
+
+      <!-- Calculated Macros Preview -->
+      <div class="mb-6 p-4 rounded-lg" style="background: rgba(255,255,255,0.04);">
+        <div class="text-xs text-slate-400 mb-3">Calculated Macros</div>
+        <div class="grid grid-cols-4 gap-2">
+          <div class="text-center">
+            <div class="text-xs text-slate-500">kcal</div>
+            <div class="font-bold neon-text" id="preview-kcal">0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500">prot</div>
+            <div class="font-bold" style="color:#818cf8;" id="preview-prot">0g</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500">carb</div>
+            <div class="font-bold" style="color:#fbbf24;" id="preview-carb">0g</div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-slate-500">fat</div>
+            <div class="font-bold" style="color:#f472b6;" id="preview-fat">0g</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button type="submit" class="btn-primary flex-1 py-3 font-semibold">Add to Meal</button>
+        <button type="button" onclick="closeAddFoodModal()" class="btn-ghost flex-1 py-3 font-semibold">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  let currentFoodData = {};
+
+  function openAddFoodModal(foodId, foodName, calories, protein, carbs, fat) {
+    currentFoodData = { foodId, foodName, calories, protein, carbs, fat };
+
+    document.getElementById('modal-food-id').value = foodId;
+    document.getElementById('modal-food-name').textContent = foodName;
+    document.getElementById('modal-food-macros').textContent =
+      `${Math.round(calories)} kcal, ${protein.toFixed(1)}g prot, ${carbs.toFixed(1)}g carb, ${fat.toFixed(1)}g fat`;
+
+    // Set today's date as default
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-log-date').value = today;
+
+    // Set default grams to 100
+    document.getElementById('modal-grams').value = 100;
+
+    // Show modal with animation
+    const modal = document.getElementById('add-to-meal-modal');
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+      anime({ targets: '#meal-modal-card', scale: [0.9, 1], opacity: [0, 1], duration: 300, easing: 'easeOutBack' });
+    }, 10);
+
+    updateMacroPreview();
+  }
+
+  function closeAddFoodModal() {
+    const modal = document.getElementById('add-to-meal-modal');
+    anime({
+      targets: '#meal-modal-card', scale: [1, 0.9], opacity: [1, 0], duration: 200, easing: 'easeInBack',
+      complete: () => modal.classList.add('hidden')
+    });
+  }
+
+  function updateMacroPreview() {
+    const grams = parseFloat(document.getElementById('modal-grams').value) || 0;
+    const multiplier = grams / 100;
+
+    document.getElementById('preview-kcal').textContent = Math.round(currentFoodData.calories * multiplier);
+    document.getElementById('preview-prot').textContent = (currentFoodData.protein * multiplier).toFixed(1) + 'g';
+    document.getElementById('preview-carb').textContent = (currentFoodData.carbs * multiplier).toFixed(1) + 'g';
+    document.getElementById('preview-fat').textContent = (currentFoodData.fat * multiplier).toFixed(1) + 'g';
+  }
+
+  // Update preview when grams change
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'modal-grams') {
+      updateMacroPreview();
+    }
+  });
+
+  // Close modal when clicking outside
+  document.getElementById('add-to-meal-modal')?.addEventListener('click', function (e) {
+    if (e.target === this) {
+      closeAddFoodModal();
+    }
+  });
+
+  anime({
+    targets: '.food-card',
+    translateY: [16, 0],
+    opacity: [0, 1],
+    delay: anime.stagger(30),
+    duration: 400,
+    easing: 'easeOutExpo'
+  });
+
+  // Modal open animation
+  document.querySelector('[onclick*="add-modal"]').addEventListener('click', () => {
+    setTimeout(() => {
+      anime({ targets: '#modal-card', scale: [0.9, 1], opacity: [0, 1], duration: 300, easing: 'easeOutBack' });
+    }, 10);
+  });
+</script>
+{% endblock %}

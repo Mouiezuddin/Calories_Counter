@@ -1,0 +1,614 @@
+{% extends "base.html" %}
+{% block title %}Welcome{% endblock %}
+
+{% block content %}
+<div class="min-h-screen relative overflow-hidden">
+  <!-- 3D Canvas Background -->
+  <canvas id="landing-canvas" class="absolute inset-0 w-full h-full"></canvas>
+
+  <!-- Gradient Overlay -->
+  <div class="absolute inset-0 bg-gradient-to-b from-void-900/40 via-void-900/60 to-void-900/80 pointer-events-none">
+  </div>
+
+  <!-- Content -->
+  <div class="relative z-10 min-h-screen flex items-center justify-center px-4">
+    <div class="text-center max-w-3xl mx-auto">
+      <!-- Hero Badge -->
+      <div id="hero-badge" class="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-sm font-medium"
+        style="background: rgba(0,245,196,0.08); border: 1px solid rgba(0,245,196,0.2); color: var(--neon);">
+        <div class="pulse-dot"></div>
+        Track smarter. Live better.
+      </div>
+
+      <!-- Hero Title -->
+      <h1 id="hero-title" class="text-5xl md:text-7xl font-bold mb-6 leading-tight font-display">
+        <span class="text-white">Fuel Your</span><br>
+        <span
+          style="background: linear-gradient(135deg, var(--neon), #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Body
+          Right</span>
+      </h1>
+
+      <!-- Hero Subtitle -->
+      <p id="hero-sub" class="text-slate-400 text-lg md:text-xl mb-12 max-w-xl mx-auto leading-relaxed">
+        A precision nutrition tracker with real-time macros, intelligent goal tracking, and beautiful analytics powered
+        by AI.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div id="hero-btns" class="flex gap-4 justify-center flex-wrap mb-16">
+        <a href="{{ url_for('auth.register') }}"
+          class="btn-primary text-lg px-8 py-4 font-semibold group relative overflow-hidden">
+          <span class="relative z-10">Start Tracking →</span>
+          <div
+            class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 group-hover:translate-x-full transition-transform duration-500">
+          </div>
+        </a>
+        <a href="{{ url_for('auth.login') }}" class="btn-ghost text-lg px-8 py-4 font-semibold">
+          Sign In
+        </a>
+      </div>
+
+      <!-- Features Grid -->
+      <div id="features-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl mx-auto mb-16">
+        <div class="card p-6 backdrop-blur-xl border border-white/10 feature-card"
+          style="background: rgba(10, 15, 30, 0.95);">
+          <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto feature-icon"
+            style="background: rgba(0,245,196,0.1); border: 1px solid rgba(0,245,196,0.2);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00f5c4" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div class="text-2xl font-bold neon-text feature-number">40+</div>
+          <div class="text-sm text-slate-400 feature-label">Foods in Database</div>
+        </div>
+
+        <div class="card p-6 backdrop-blur-xl border border-white/10 feature-card"
+          style="background: rgba(10, 15, 30, 0.95);">
+          <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto feature-icon"
+            style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2">
+              <circle cx="12" cy="12" r="1" />
+              <path
+                d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 0l4.24-4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08 0l4.24 4.24" />
+            </svg>
+          </div>
+          <div class="text-2xl font-bold feature-number" style="color: #818cf8;">4</div>
+          <div class="text-sm text-slate-400 feature-label">Meal Types</div>
+        </div>
+
+        <div class="card p-6 backdrop-blur-xl border border-white/10 feature-card"
+          style="background: rgba(10, 15, 30, 0.95);">
+          <div class="w-12 h-12 rounded-lg flex items-center justify-center mb-4 mx-auto feature-icon"
+            style="background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.2);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+          <div class="text-2xl font-bold feature-number" style="color: #fbbf24;">CSV+PDF</div>
+          <div class="text-sm text-slate-400 feature-label">Export Options</div>
+        </div>
+      </div>
+
+      <!-- Stats Row -->
+      <div id="hero-stats" class="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+        <div class="text-center stat-item">
+          <div class="text-3xl font-bold neon-text stat-value">100%</div>
+          <div class="text-xs text-slate-500">Accurate</div>
+        </div>
+        <div class="text-center stat-item">
+          <div class="text-3xl font-bold stat-value" style="color: #818cf8;">Real-time</div>
+          <div class="text-xs text-slate-500">Tracking</div>
+        </div>
+        <div class="text-center stat-item">
+          <div class="text-3xl font-bold stat-value" style="color: #fbbf24;">Secure</div>
+          <div class="text-xs text-slate-500">Encrypted</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating 3D Objects Info -->
+  <div class="absolute bottom-8 left-8 right-8 z-20 text-center text-xs text-slate-500">
+    <p>🎨 Rotating 3D nutrition artifacts • Powered by Three.js + Theatre.js + Anime.js</p>
+  </div>
+</div>
+
+<style>
+  #landing-canvas {
+    filter: blur(0.5px);
+  }
+
+  .feature-card {
+    transform-origin: center;
+  }
+
+  .stat-item {
+    transform-origin: center;
+  }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script type="module">
+  import { getProject } from 'https://cdn.jsdelivr.net/npm/@theatre/core@0.7.0/dist/index.esm.js';
+
+  // Initialize Theatre.js project
+  const theatreProject = getProject('NutriCore Landing');
+  const sheet = theatreProject.sheet('Scene');
+
+  // Create Theatre.js objects for animations
+  const heroObj = sheet.object('hero', {
+    opacity: 0,
+    scale: 0.8,
+    y: 30,
+  });
+
+  const featuresObj = sheet.object('features', {
+    opacity: 0,
+    scale: 0.9,
+    y: 20,
+  });
+
+  const statsObj = sheet.object('stats', {
+    opacity: 0,
+    scale: 0.8,
+    y: 20,
+  });
+
+  // Three.js Scene Setup
+  (function initLandingScene() {
+    const canvas = document.getElementById('landing-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.z = 30;
+
+    // Lighting setup
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const pointLight1 = new THREE.PointLight(0x00f5c4, 1.5, 150);
+    pointLight1.position.set(20, 20, 20);
+    scene.add(pointLight1);
+
+    const pointLight2 = new THREE.PointLight(0x6366f1, 1, 150);
+    pointLight2.position.set(-20, -20, 20);
+    scene.add(pointLight2);
+
+    // Create rotating 3D meal artifacts
+    const artifacts = [];
+
+    // Plate with food
+    function createPlate() {
+      const group = new THREE.Group();
+
+      // Plate base
+      const plateGeo = new THREE.CylinderGeometry(3, 3, 0.3, 32);
+      const plateMat = new THREE.MeshPhongMaterial({ color: 0xf5f5f5, shininess: 100 });
+      const plate = new THREE.Mesh(plateGeo, plateMat);
+      group.add(plate);
+
+      // Food items on plate
+      const foodColors = [0xff6b6b, 0x4a9d6f, 0xffd700];
+      for (let i = 0; i < 3; i++) {
+        const foodGeo = new THREE.SphereGeometry(0.6, 16, 16);
+        const foodMat = new THREE.MeshPhongMaterial({ color: foodColors[i], shininess: 80 });
+        const food = new THREE.Mesh(foodGeo, foodMat);
+        food.position.set(
+          Math.cos((i / 3) * Math.PI * 2) * 1.5,
+          0.3,
+          Math.sin((i / 3) * Math.PI * 2) * 1.5
+        );
+        group.add(food);
+      }
+
+      group.userData.type = 'plate';
+      return group;
+    }
+
+    // Pyramid (representing balanced nutrition)
+    function createPyramid() {
+      const group = new THREE.Group();
+
+      const levels = [
+        { size: 2.5, height: 0.5, color: 0x4a9d6f, label: 'Vegetables' },
+        { size: 2, height: 0.5, color: 0xffd700, label: 'Grains' },
+        { size: 1.5, height: 0.5, color: 0xff6b6b, label: 'Protein' },
+        { size: 1, height: 0.5, color: 0xffa500, label: 'Fats' },
+      ];
+
+      let yOffset = 0;
+      levels.forEach((level, i) => {
+        const geo = new THREE.ConeGeometry(level.size, level.height, 32);
+        const mat = new THREE.MeshPhongMaterial({ color: level.color, shininess: 80 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.y = yOffset;
+        group.add(mesh);
+        yOffset += level.height;
+      });
+
+      group.userData.type = 'pyramid';
+      return group;
+    }
+
+    // Dumbbell (representing fitness)
+    function createDumbbell() {
+      const group = new THREE.Group();
+
+      // Bar
+      const barGeo = new THREE.CylinderGeometry(0.2, 0.2, 3, 16);
+      const barMat = new THREE.MeshPhongMaterial({ color: 0x888888, shininess: 100 });
+      const bar = new THREE.Mesh(barGeo, barMat);
+      group.add(bar);
+
+      // Weights
+      const weightGeo = new THREE.SphereGeometry(0.8, 16, 16);
+      const weightMat = new THREE.MeshPhongMaterial({ color: 0xff6b6b, shininess: 80 });
+
+      const weight1 = new THREE.Mesh(weightGeo, weightMat);
+      weight1.position.x = -1.8;
+      group.add(weight1);
+
+      const weight2 = new THREE.Mesh(weightGeo, weightMat);
+      weight2.position.x = 1.8;
+      group.add(weight2);
+
+      group.userData.type = 'dumbbell';
+      return group;
+    }
+
+    // Apple
+    function createApple() {
+      const geo = new THREE.IcosahedronGeometry(1.2, 4);
+      const mat = new THREE.MeshPhongMaterial({ color: 0xff6b6b, shininess: 100 });
+      const apple = new THREE.Mesh(geo, mat);
+      apple.userData.type = 'apple';
+      return apple;
+    }
+
+    // Carrot
+    function createCarrot() {
+      const geo = new THREE.ConeGeometry(0.6, 2.5, 8);
+      const mat = new THREE.MeshPhongMaterial({ color: 0xffa500, shininess: 80 });
+      const carrot = new THREE.Mesh(geo, mat);
+      carrot.userData.type = 'carrot';
+      return carrot;
+    }
+
+    // Broccoli (compound object)
+    function createBroccoli() {
+      const group = new THREE.Group();
+
+      // Stem
+      const stemGeo = new THREE.CylinderGeometry(0.3, 0.4, 1.5, 8);
+      const stemMat = new THREE.MeshPhongMaterial({ color: 0x2d5016, shininess: 60 });
+      const stem = new THREE.Mesh(stemGeo, stemMat);
+      stem.position.y = -0.5;
+      group.add(stem);
+
+      // Head (multiple spheres)
+      const headMat = new THREE.MeshPhongMaterial({ color: 0x4a9d6f, shininess: 80 });
+      const mainHeadGeo = new THREE.IcosahedronGeometry(1, 3);
+      const mainHead = new THREE.Mesh(mainHeadGeo, headMat);
+      mainHead.position.y = 1;
+      mainHead.scale.set(1.2, 1.2, 1.2);
+      group.add(mainHead);
+
+      // Florets
+      for (let i = 0; i < 4; i++) {
+        const floretGeo = new THREE.SphereGeometry(0.4, 8, 8);
+        const floret = new THREE.Mesh(floretGeo, headMat);
+        floret.position.set(
+          Math.cos((i / 4) * Math.PI * 2) * 0.8,
+          1.2,
+          Math.sin((i / 4) * Math.PI * 2) * 0.8
+        );
+        group.add(floret);
+      }
+
+      group.userData.type = 'broccoli';
+      return group;
+    }
+
+    // Banana (curved shape)
+    function createBanana() {
+      const group = new THREE.Group();
+
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0.5, 1, 0),
+        new THREE.Vector3(1.5, 1.5, 0),
+        new THREE.Vector3(2, 1, 0),
+      ]);
+
+      const geo = new THREE.TubeGeometry(curve, 20, 0.4, 8);
+      const mat = new THREE.MeshPhongMaterial({ color: 0xffd700, shininess: 100 });
+      const banana = new THREE.Mesh(geo, mat);
+      group.add(banana);
+
+      group.userData.type = 'banana';
+      return group;
+    }
+
+    // Water Droplet (representing hydration)
+    function createWaterDroplet() {
+      const group = new THREE.Group();
+
+      // Main droplet body
+      const bodyGeo = new THREE.SphereGeometry(0.8, 32, 32);
+      const bodyMat = new THREE.MeshPhongMaterial({
+        color: 0x00d4ff,
+        shininess: 120,
+        transparent: true,
+        opacity: 0.8
+      });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.scale.set(1, 1.3, 1);
+      group.add(body);
+
+      // Highlight
+      const highlightGeo = new THREE.SphereGeometry(0.3, 16, 16);
+      const highlightMat = new THREE.MeshPhongMaterial({
+        color: 0xffffff,
+        shininess: 150,
+        transparent: true,
+        opacity: 0.6
+      });
+      const highlight = new THREE.Mesh(highlightGeo, highlightMat);
+      highlight.position.set(0.3, 0.3, 0.3);
+      group.add(highlight);
+
+      group.userData.type = 'water';
+      return group;
+    }
+
+    // Protein Shake (cylinder with gradient)
+    function createProteinShake() {
+      const group = new THREE.Group();
+
+      // Glass
+      const glassGeo = new THREE.CylinderGeometry(0.6, 0.6, 2, 16);
+      const glassMat = new THREE.MeshPhongMaterial({
+        color: 0xffb6c1,
+        shininess: 100,
+        transparent: true,
+        opacity: 0.7
+      });
+      const glass = new THREE.Mesh(glassGeo, glassMat);
+      group.add(glass);
+
+      // Liquid inside
+      const liquidGeo = new THREE.CylinderGeometry(0.55, 0.55, 1.8, 16);
+      const liquidMat = new THREE.MeshPhongMaterial({
+        color: 0xff69b4,
+        shininess: 80
+      });
+      const liquid = new THREE.Mesh(liquidGeo, liquidMat);
+      liquid.position.y = -0.1;
+      group.add(liquid);
+
+      // Straw
+      const strawGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.5, 8);
+      const strawMat = new THREE.MeshPhongMaterial({ color: 0xff1493 });
+      const straw = new THREE.Mesh(strawGeo, strawMat);
+      straw.position.set(0.3, 0.5, 0);
+      straw.rotation.z = 0.3;
+      group.add(straw);
+
+      group.userData.type = 'shake';
+      return group;
+    }
+
+    // Salad Bowl (compound)
+    function createSaladBowl() {
+      const group = new THREE.Group();
+
+      // Bowl
+      const bowlGeo = new THREE.SphereGeometry(1.2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+      const bowlMat = new THREE.MeshPhongMaterial({ color: 0xd4a574, shininess: 80 });
+      const bowl = new THREE.Mesh(bowlGeo, bowlMat);
+      group.add(bowl);
+
+      // Salad leaves (multiple spheres)
+      const leafColors = [0x4a9d6f, 0x6db84c, 0x7ec850];
+      for (let i = 0; i < 6; i++) {
+        const leafGeo = new THREE.SphereGeometry(0.4, 16, 16);
+        const leafMat = new THREE.MeshPhongMaterial({ color: leafColors[i % 3], shininess: 60 });
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        leaf.position.set(
+          Math.cos((i / 6) * Math.PI * 2) * 0.7,
+          0.5 + Math.random() * 0.3,
+          Math.sin((i / 6) * Math.PI * 2) * 0.7
+        );
+        leaf.scale.set(0.8, 0.6, 0.8);
+        group.add(leaf);
+      }
+
+      group.userData.type = 'salad';
+      return group;
+    }
+
+    // Barbell (fitness)
+    function createBarbell() {
+      const group = new THREE.Group();
+
+      // Bar
+      const barGeo = new THREE.CylinderGeometry(0.15, 0.15, 4, 16);
+      const barMat = new THREE.MeshPhongMaterial({ color: 0x555555, shininess: 120 });
+      const bar = new THREE.Mesh(barGeo, barMat);
+      group.add(bar);
+
+      // Weights (larger)
+      const weightGeo = new THREE.CylinderGeometry(0.7, 0.7, 0.4, 16);
+      const weightMat = new THREE.MeshPhongMaterial({ color: 0xff4444, shininess: 100 });
+
+      for (let i = 0; i < 2; i++) {
+        const weight = new THREE.Mesh(weightGeo, weightMat);
+        weight.position.x = (i === 0 ? -2 : 2);
+        group.add(weight);
+      }
+
+      // Grip
+      const gripGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.8, 8);
+      const gripMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
+
+      for (let i = 0; i < 2; i++) {
+        const grip = new THREE.Mesh(gripGeo, gripMat);
+        grip.position.x = (i === 0 ? -1 : 1);
+        group.add(grip);
+      }
+
+      group.userData.type = 'barbell';
+      return group;
+    }
+
+    // Create and position artifacts
+    const creators = [createPlate, createPyramid, createDumbbell, createApple, createCarrot,
+      createBroccoli, createBanana, createWaterDroplet, createProteinShake,
+      createSaladBowl, createBarbell];
+    for (let i = 0; i < 8; i++) {
+      const artifact = creators[i % creators.length]();
+      artifact.position.set(
+        (Math.random() - 0.5) * 70,
+        (Math.random() - 0.5) * 60,
+        (Math.random() - 0.5) * 50 - 20
+      );
+      artifact.rotation.set(
+        Math.random() * Math.PI,
+        Math.random() * Math.PI,
+        Math.random() * Math.PI
+      );
+      artifact.userData.rotSpeed = {
+        x: (Math.random() - 0.5) * 0.008,
+        y: (Math.random() - 0.5) * 0.008,
+        z: (Math.random() - 0.5) * 0.005,
+      };
+      artifact.userData.startY = artifact.position.y;
+      scene.add(artifact);
+      artifacts.push(artifact);
+    }
+
+    // Animation loop
+    let lastTime = 0;
+    const targetFPS = 30;
+    const interval = 1000 / targetFPS;
+
+    function animate(timestamp) {
+      requestAnimationFrame(animate);
+      if (timestamp - lastTime < interval) return;
+      lastTime = timestamp;
+
+      // Rotate and float artifacts
+      artifacts.forEach((artifact, i) => {
+        artifact.rotation.x += artifact.userData.rotSpeed.x;
+        artifact.rotation.y += artifact.userData.rotSpeed.y;
+        artifact.rotation.z += artifact.userData.rotSpeed.z;
+        artifact.position.y = artifact.userData.startY + Math.sin(timestamp * 0.0008 + i) * 3;
+      });
+
+      // Rotate lights
+      pointLight1.position.x = Math.sin(timestamp * 0.0004) * 30;
+      pointLight1.position.z = Math.cos(timestamp * 0.0004) * 30;
+      pointLight2.position.x = Math.cos(timestamp * 0.0003) * 30;
+      pointLight2.position.z = Math.sin(timestamp * 0.0003) * 30;
+
+      renderer.render(scene, camera);
+    }
+    animate(0);
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  })();
+
+  // Theatre.js Timeline Animation
+  sheet.sequence.attachRange(heroObj.props, {
+    from: 0,
+    to: 1,
+  });
+
+  sheet.sequence.attachRange(featuresObj.props, {
+    from: 0.3,
+    to: 1.3,
+  });
+
+  sheet.sequence.attachRange(statsObj.props, {
+    from: 0.6,
+    to: 1.6,
+  });
+
+  // Apply Theatre.js animations to DOM elements
+  heroObj.props.opacity.onValuesChange((opacity) => {
+    const badge = document.getElementById('hero-badge');
+    const title = document.getElementById('hero-title');
+    const sub = document.getElementById('hero-sub');
+    const btns = document.getElementById('hero-btns');
+
+    if (badge) badge.style.opacity = opacity;
+    if (title) title.style.opacity = opacity;
+    if (sub) sub.style.opacity = opacity;
+    if (btns) btns.style.opacity = opacity;
+  });
+
+  heroObj.props.scale.onValuesChange((scale) => {
+    const title = document.getElementById('hero-title');
+    if (title) title.style.transform = `scale(${scale})`;
+  });
+
+  heroObj.props.y.onValuesChange((y) => {
+    const badge = document.getElementById('hero-badge');
+    if (badge) badge.style.transform = `translateY(${y}px)`;
+  });
+
+  featuresObj.props.opacity.onValuesChange((opacity) => {
+    const grid = document.getElementById('features-grid');
+    if (grid) grid.style.opacity = opacity;
+  });
+
+  featuresObj.props.scale.onValuesChange((scale) => {
+    const cards = document.querySelectorAll('.feature-card');
+    cards.forEach(card => {
+      card.style.transform = `scale(${scale})`;
+    });
+  });
+
+  statsObj.props.opacity.onValuesChange((opacity) => {
+    const stats = document.getElementById('hero-stats');
+    if (stats) stats.style.opacity = opacity;
+  });
+
+  statsObj.props.scale.onValuesChange((scale) => {
+    const items = document.querySelectorAll('.stat-item');
+    items.forEach(item => {
+      item.style.transform = `scale(${scale})`;
+    });
+  });
+
+  // Play the Theatre.js sequence
+  theatreProject.ready.then(() => {
+    sheet.sequence.play({
+      iterationCount: Infinity,
+      direction: 'alternate',
+    });
+  });
+
+  // Fallback Anime.js animations if Theatre.js doesn't load
+  anime.timeline({ easing: 'easeOutExpo' })
+    .add({ targets: '#hero-badge', translateY: [-20, 0], opacity: [0, 1], duration: 600 })
+    .add({ targets: '#hero-title', translateY: [30, 0], opacity: [0, 1], duration: 800 }, '-=300')
+    .add({ targets: '#hero-sub', translateY: [20, 0], opacity: [0, 1], duration: 600 }, '-=400')
+    .add({ targets: '#hero-btns', translateY: [20, 0], opacity: [0, 1], duration: 500 }, '-=300')
+    .add({
+      targets: '#features-grid .card', translateY: [20, 0], opacity: [0, 1],
+      delay: anime.stagger(100), duration: 500
+    }, '-=200')
+    .add({
+      targets: '#hero-stats > div', translateY: [20, 0], opacity: [0, 1],
+      delay: anime.stagger(80), duration: 500
+    }, '-=200');
+</script>
+{% endblock %}

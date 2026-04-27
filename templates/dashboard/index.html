@@ -1,0 +1,539 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  #orb-canvas { display: block; margin: 0 auto; }
+
+  .macro-bar { transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+
+  .meal-section { transition: all 0.3s ease; }
+
+  .food-suggestion {
+    background: rgba(10,15,30,0.95);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    position: absolute;
+    width: 100%;
+    z-index: 100;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .food-suggestion-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .food-suggestion-item:hover { background: rgba(0,245,196,0.08); }
+  .food-suggestion-item:last-child { border-bottom: none; }
+
+  .stat-num { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
+</style>
+{% endblock %}
+
+{% block content %}
+{# vars passed from route: cals_consumed, cals_goal, cals_remaining, pct, orb_color #}
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+
+  <!-- Date Nav -->
+  <div class="flex items-center justify-between mb-8" id="date-nav">
+    <div>
+      <h1 class="text-2xl font-bold text-white">
+        {% if log_date == today %}Today's Log{% else %}{{ log_date.strftime('%B %d, %Y') }}{% endif %}
+      </h1>
+      <p class="text-slate-500 text-sm mt-1">{{ log_date.strftime('%A, %B %d') }}</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{{ url_for('dashboard.index', date=(log_date - timedelta(days=1)).isoformat()) }}"
+         class="btn-ghost py-2 px-4 text-sm">← Prev</a>
+      {% if log_date < today %}
+      <a href="{{ url_for('dashboard.index', date=(log_date + timedelta(days=1)).isoformat()) }}"
+         class="btn-ghost py-2 px-4 text-sm">Next →</a>
+      {% endif %}
+      {% if log_date != today %}
+      <a href="{{ url_for('dashboard.index') }}" class="btn-primary py-2 px-4 text-sm">Today</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- HERO: 3D Orb + Summary Cards -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+
+    <!-- 3D Calorie Orb -->
+    <div class="card p-6 flex flex-col items-center justify-center" id="orb-card">
+      <canvas id="orb-canvas" width="200" height="200"></canvas>
+      <div class="text-center mt-4">
+        <div class="stat-num text-4xl font-bold" id="cal-display"
+             style="color: {{ orb_color }}">{{ cals_consumed | int }}</div>
+        <div class="text-slate-400 text-sm mt-1">of {{ cals_goal }} kcal goal</div>
+        <div class="mt-3 text-sm font-medium"
+             style="color: {{ '#f87171' if cals_remaining < 0 else '#00f5c4' }}">
+          {% if cals_remaining >= 0 %}{{ cals_remaining | int }} remaining{% else %}{{ (-cals_remaining) | int }} over goal{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Macro Cards -->
+    <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {% set macros = [
+        ('Protein', log.total_protein if log else 0, current_user.protein_goal, '#818cf8'),
+        ('Carbs',   log.total_carbs   if log else 0, current_user.carbs_goal,   '#fbbf24'),
+        ('Fat',     log.total_fat     if log else 0, current_user.fat_goal,      '#f472b6'),
+      ] %}
+      {% for name, consumed, goal, color in macros %}
+      <div class="card p-5">
+        <div class="flex justify-between items-start mb-3">
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">{{ name }}</div>
+            <div class="stat-num text-2xl font-bold text-white mt-1">{{ consumed | round(1) }}g</div>
+          </div>
+          <div class="text-xs text-slate-500">/ {{ goal | int }}g</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill macro-bar"
+               style="width: {{ [consumed/goal*100 if goal else 0, 100] | min }}%;
+                      background: {{ color }};"
+               data-width="{{ [consumed/goal*100 if goal else 0, 100] | min }}">
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- Fiber + Calories progress card -->
+      <div class="card p-5 sm:col-span-3">
+        <div class="flex justify-between items-center mb-3">
+          <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">Calorie Progress</div>
+          <div class="text-xs font-mono text-slate-400">{{ pct | round(1) }}%</div>
+        </div>
+        <div class="progress-track h-3">
+          <div class="progress-fill"
+               style="width: {{ pct }}%;
+                      background: linear-gradient(90deg, {{ orb_color }}, {{ '#f87171' if pct >= 100 else orb_color }});">
+          </div>
+        </div>
+        <div class="flex justify-between text-xs text-slate-500 mt-2">
+          <span>0</span><span>{{ cals_goal }} kcal</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <!-- Weekly Bar -->
+    <div class="card p-6">
+      <h3 class="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">7-Day Calories</h3>
+      <canvas id="weeklyChart" height="200"></canvas>
+    </div>
+    <!-- Macro Pie -->
+    <div class="card p-6">
+      <h3 class="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">Today's Macros</h3>
+      <canvas id="macroChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Add Food + Log -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- Add Food Panel -->
+    <div class="lg:col-span-2 card p-6" id="add-panel">
+      <h3 class="text-base font-semibold text-white mb-5">Add Food</h3>
+
+      <form method="POST" action="{{ url_for('dashboard.add_item') }}" id="add-food-form">
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="log_date" value="{{ log_date.isoformat() }}">
+        <input type="hidden" name="food_id" id="food_id_hidden">
+
+        <!-- Food Search -->
+        <div class="mb-4 relative">
+          <label class="block text-xs font-medium text-slate-400 mb-2">Search Food</label>
+          <input type="text" id="food-search" placeholder="e.g. Chicken Breast"
+                 autocomplete="off">
+          <div id="food-suggestions" class="food-suggestion hidden"></div>
+        </div>
+
+        <!-- Selected Food Info -->
+        <div id="selected-food-info" class="hidden mb-4 p-3 rounded-lg"
+             style="background: rgba(0,245,196,0.06); border: 1px solid rgba(0,245,196,0.2);">
+          <div class="text-sm font-medium neon-text" id="sel-name"></div>
+          <div class="text-xs text-slate-400 mt-1" id="sel-macros"></div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-2">Amount (g)</label>
+            <input type="number" name="grams" id="grams-input" min="1" max="5000"
+                   placeholder="100" step="1" value="100">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-2">Meal</label>
+            <select name="meal_type">
+              <option value="breakfast">🌅 Breakfast</option>
+              <option value="lunch">☀️ Lunch</option>
+              <option value="dinner">🌙 Dinner</option>
+              <option value="snack" selected>🍎 Snack</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Live calc preview -->
+        <div id="calc-preview" class="hidden mb-4 grid grid-cols-4 gap-2 text-center">
+          <div class="p-2 rounded-lg" style="background: rgba(255,255,255,0.04);">
+            <div class="text-xs text-slate-500">kcal</div>
+            <div class="text-sm font-bold text-white stat-num" id="prev-cal">0</div>
+          </div>
+          <div class="p-2 rounded-lg" style="background: rgba(255,255,255,0.04);">
+            <div class="text-xs text-slate-500">pro</div>
+            <div class="text-sm font-bold stat-num" style="color:#818cf8" id="prev-pro">0g</div>
+          </div>
+          <div class="p-2 rounded-lg" style="background: rgba(255,255,255,0.04);">
+            <div class="text-xs text-slate-500">carb</div>
+            <div class="text-sm font-bold stat-num" style="color:#fbbf24" id="prev-carb">0g</div>
+          </div>
+          <div class="p-2 rounded-lg" style="background: rgba(255,255,255,0.04);">
+            <div class="text-xs text-slate-500">fat</div>
+            <div class="text-sm font-bold stat-num" style="color:#f472b6" id="prev-fat">0g</div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary w-full" id="add-btn" disabled
+                style="opacity: 0.5; cursor: not-allowed;">
+          + Add to Log
+        </button>
+      </form>
+    </div>
+
+    <!-- Daily Log by Meal -->
+    <div class="lg:col-span-3 space-y-4">
+      {% for meal_key, meal_label, meal_icon in [
+          ('breakfast', 'Breakfast', '🌅'),
+          ('lunch', 'Lunch', '☀️'),
+          ('dinner', 'Dinner', '🌙'),
+          ('snack', 'Snacks', '🍎')
+      ] %}
+      {% if meals[meal_key] %}
+      <div class="card p-5 meal-section">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-sm font-semibold text-slate-300">{{ meal_icon }} {{ meal_label }}</h4>
+          <span class="text-xs text-slate-500 stat-num">
+            {{ meals[meal_key] | sum(attribute='calories') | round | int }} kcal
+          </span>
+        </div>
+        <div class="space-y-2">
+          {% for item in meals[meal_key] %}
+          <div class="flex items-center justify-between py-2 border-b border-white/5 last:border-0 log-item">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-white truncate">{{ item.food.name }}</div>
+              <div class="text-xs text-slate-500 stat-num">{{ item.grams }}g · {{ item.calories | round | int }} kcal</div>
+            </div>
+            <div class="flex items-center gap-3 ml-4 text-xs stat-num text-slate-400">
+              <span style="color:#818cf8">P:{{ item.protein | round(1) }}g</span>
+              <span style="color:#fbbf24">C:{{ item.carbs | round(1) }}g</span>
+              <span style="color:#f472b6">F:{{ item.fat | round(1) }}g</span>
+              <form method="POST" action="{{ url_for('dashboard.remove_item', item_id=item.id) }}">
+                {{ form.hidden_tag() }}
+                <button type="submit" class="text-slate-600 hover:text-red-400 transition-colors ml-2"
+                        onclick="return confirm('Remove this item?')">✕</button>
+              </form>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      {% endfor %}
+
+      {% if not log or not log.items %}
+      <div class="card p-12 text-center" id="empty-log">
+        <div class="text-4xl mb-3">🥗</div>
+        <p class="text-slate-400">No foods logged yet for this day.</p>
+        <p class="text-slate-600 text-sm mt-1">Search and add foods using the panel on the left.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Particle burst container -->
+<div id="burst-container" style="position:fixed;top:0;left:0;pointer-events:none;z-index:200;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ===================== 3D ORB (Three.js) =====================
+(function() {
+  const canvas = document.getElementById('orb-canvas');
+  if (!canvas || typeof THREE === 'undefined') return;
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setSize(200, 200);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  camera.position.z = 4;
+
+  const pct = {{ pct }};
+  let orbColor = new THREE.Color('{{ orb_color }}');
+
+  // Core orb geometry
+  const geo = new THREE.IcosahedronGeometry(1.2, 3);
+  const mat = new THREE.MeshPhongMaterial({
+    color: orbColor,
+    emissive: orbColor,
+    emissiveIntensity: 0.25,
+    transparent: true,
+    opacity: 0.85,
+    wireframe: false,
+  });
+  const orb = new THREE.Mesh(geo, mat);
+  scene.add(orb);
+
+  // Wireframe overlay
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: orbColor, wireframe: true, opacity: 0.25, transparent: true
+  });
+  const wire = new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 2), wireMat);
+  scene.add(wire);
+
+  // Glow ring
+  const ringGeo = new THREE.TorusGeometry(1.6, 0.02, 8, 60);
+  const ringMat = new THREE.MeshBasicMaterial({ color: orbColor, transparent: true, opacity: 0.4 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.rotation.x = Math.PI / 3;
+  scene.add(ring);
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+  const pLight = new THREE.PointLight(0x00f5c4, 2, 10);
+  pLight.position.set(3, 3, 3);
+  scene.add(pLight);
+
+  let frame = 0;
+  const FPS_LIMIT = 30;
+  let last = 0;
+  function animate(ts) {
+    requestAnimationFrame(animate);
+    if (ts - last < 1000/FPS_LIMIT) return;
+    last = ts;
+    frame++;
+    orb.rotation.y += 0.012;
+    orb.rotation.x = Math.sin(frame * 0.02) * 0.15;
+    wire.rotation.y -= 0.008;
+    ring.rotation.z += 0.005;
+    // Pulse glow
+    const pulse = 0.2 + Math.sin(frame * 0.06) * 0.08;
+    mat.emissiveIntensity = pulse;
+    renderer.render(scene, camera);
+  }
+  animate(0);
+})();
+
+// ===================== CHARTS (Chart.js) =====================
+(function() {
+  Chart.defaults.color = '#64748b';
+  Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+
+  // Weekly bar chart
+  const weeklyData = {{ weekly_data | tojson }};
+  const wCtx = document.getElementById('weeklyChart');
+  if (wCtx) {
+    new Chart(wCtx, {
+      type: 'bar',
+      data: {
+        labels: weeklyData.map(d => d.date),
+        datasets: [
+          {
+            label: 'Calories',
+            data: weeklyData.map(d => d.calories),
+            backgroundColor: 'rgba(0,245,196,0.3)',
+            borderColor: '#00f5c4',
+            borderWidth: 2,
+            borderRadius: 6,
+          },
+          {
+            label: 'Goal',
+            data: weeklyData.map(d => d.goal),
+            type: 'line',
+            borderColor: 'rgba(248,113,113,0.6)',
+            borderDash: [5, 5],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#475569' } },
+          x: { grid: { display: false }, ticks: { color: '#475569' } }
+        }
+      }
+    });
+  }
+
+  // Macro pie
+  const protein = {{ log.total_protein | round(1) if log else 0 }};
+  const carbs   = {{ log.total_carbs   | round(1) if log else 0 }};
+  const fat      = {{ log.total_fat    | round(1) if log else 0 }};
+  const pCtx = document.getElementById('macroChart');
+  if (pCtx && (protein + carbs + fat > 0)) {
+    new Chart(pCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Protein', 'Carbs', 'Fat'],
+        datasets: [{
+          data: [protein, carbs, fat],
+          backgroundColor: ['rgba(129,140,248,0.8)', 'rgba(251,191,36,0.8)', 'rgba(244,114,182,0.8)'],
+          borderColor: ['#818cf8', '#fbbf24', '#f472b6'],
+          borderWidth: 2,
+          hoverOffset: 8,
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { padding: 16, usePointStyle: true, pointStyleWidth: 8 }
+          }
+        }
+      }
+    });
+  } else if (pCtx) {
+    const ctx = pCtx.getContext('2d');
+    ctx.fillStyle = '#1e293b';
+    ctx.font = '14px Space Grotesk';
+    ctx.textAlign = 'center';
+    ctx.fillText('Log food to see macro breakdown', pCtx.width/2, pCtx.height/2);
+  }
+})();
+
+// ===================== FOOD SEARCH =====================
+let selectedFood = null;
+const searchInput = document.getElementById('food-search');
+const sugBox = document.getElementById('food-suggestions');
+const hiddenId = document.getElementById('food_id_hidden');
+const addBtn = document.getElementById('add-btn');
+const gramsInput = document.getElementById('grams-input');
+
+searchInput.addEventListener('input', async function() {
+  const q = this.value.trim();
+  if (q.length < 2) { sugBox.classList.add('hidden'); return; }
+  const res = await fetch(`/food/search?q=${encodeURIComponent(q)}`);
+  const foods = await res.json();
+  sugBox.innerHTML = '';
+  if (foods.length === 0) {
+    sugBox.innerHTML = '<div class="food-suggestion-item text-slate-500 text-sm">No results found</div>';
+  } else {
+    foods.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'food-suggestion-item';
+      div.innerHTML = `
+        <div class="text-sm font-medium text-white">${f.name}</div>
+        <div class="text-xs text-slate-500 stat-num mt-0.5">${f.calories} kcal · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</div>
+      `;
+      div.addEventListener('click', () => selectFood(f));
+      sugBox.appendChild(div);
+    });
+  }
+  sugBox.classList.remove('hidden');
+});
+
+function selectFood(food) {
+  selectedFood = food;
+  searchInput.value = food.name;
+  hiddenId.value = food.id;
+  sugBox.classList.add('hidden');
+  document.getElementById('selected-food-info').classList.remove('hidden');
+  document.getElementById('sel-name').textContent = food.name;
+  document.getElementById('sel-macros').textContent =
+    `Per 100g: ${food.calories} kcal · P:${food.protein}g C:${food.carbs}g F:${food.fat}g`;
+  addBtn.disabled = false;
+  addBtn.style.opacity = '1';
+  addBtn.style.cursor = 'pointer';
+  updatePreview();
+  anime({ targets: '#selected-food-info', scale: [0.95, 1], opacity: [0, 1], duration: 300 });
+}
+
+function updatePreview() {
+  if (!selectedFood) return;
+  const g = parseFloat(gramsInput.value) || 100;
+  const r = g / 100;
+  document.getElementById('prev-cal').textContent  = Math.round(selectedFood.calories * r);
+  document.getElementById('prev-pro').textContent  = (selectedFood.protein * r).toFixed(1) + 'g';
+  document.getElementById('prev-carb').textContent = (selectedFood.carbs   * r).toFixed(1) + 'g';
+  document.getElementById('prev-fat').textContent  = (selectedFood.fat     * r).toFixed(1) + 'g';
+  document.getElementById('calc-preview').classList.remove('hidden');
+}
+
+gramsInput.addEventListener('input', updatePreview);
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (!searchInput.contains(e.target) && !sugBox.contains(e.target)) {
+    sugBox.classList.add('hidden');
+  }
+});
+
+// ===================== PARTICLE BURST ON ADD =====================
+document.getElementById('add-food-form').addEventListener('submit', function(e) {
+  if (!selectedFood) return;
+  spawnBurst();
+});
+
+function spawnBurst() {
+  const container = document.getElementById('burst-container');
+  const btn = document.getElementById('add-btn');
+  const rect = btn.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div');
+    p.style.cssText = `
+      position: fixed;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--neon);
+      left: ${cx}px; top: ${cy}px;
+      pointer-events: none;
+    `;
+    container.appendChild(p);
+    const angle = (i / 16) * Math.PI * 2;
+    const dist = 60 + Math.random() * 60;
+    anime({
+      targets: p,
+      translateX: Math.cos(angle) * dist,
+      translateY: Math.sin(angle) * dist,
+      opacity: [1, 0],
+      scale: [1, 0],
+      duration: 600 + Math.random() * 300,
+      easing: 'easeOutExpo',
+      complete: () => p.remove()
+    });
+  }
+}
+
+// ===================== ANIME.JS ENTRY ANIMATIONS =====================
+anime.timeline({ easing: 'easeOutExpo' })
+  .add({ targets: '#orb-card', scale: [0.9, 1], opacity: [0, 1], duration: 700 })
+  .add({ targets: '.card', translateY: [16, 0], opacity: [0, 1],
+         delay: anime.stagger(50), duration: 500 }, '-=400');
+
+// Animated counter for calorie display
+anime({
+  targets: '#cal-display',
+  innerHTML: [0, {{ cals_consumed | int }}],
+  round: 1,
+  duration: 1200,
+  easing: 'easeOutExpo',
+});
+</script>
+{% endblock %}
